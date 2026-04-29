@@ -1,6 +1,6 @@
 # MiniHyperVec
 
-MiniHyperVec is a lightweight vector search framework built around SPDK-based NVMe access and an HNSW-based in-memory routing stage.
+MiniHyperVec is the open-source proof-of-concept version of Helmsman (The Clustering Strikes Back: Building Cost-Effective and High-Performance ANNS at Scale with Helmsman, OSDI 2026).
 
 ## Prerequisites
 
@@ -291,3 +291,20 @@ sudo ./app/config_nvme_meta
 3. Make sure `path_config.json` points to valid writable directories.
 
 4. Ensure that the collection name, query file, and ground-truth file are consistent with the deployed dataset and index configuration.
+
+## Citation
+If you use Helmsman in your research, please cite our papers:
+
+```
+@inproceedings{Osdi2026Helmsman,
+	author = {Huang, Yuchen and Ma, Baiteng and Sun, Yiping and Shi, Yang and Chen, Xiao and Zhong, Xiaocheng and Wang, Zhiyong and Hu, Yao and Xu, Erci and Weng, Chuliang},
+	title = {{The Clustering Strikes Back: Building Cost-Effective and High-Performance ANNS at Scale with Helmsman}},
+	year = {2026},
+    booktitle = {Proceedings of the 20th USENIX Symposium on Operating Systems Design and Implementation},
+    series = {OSDI '26},
+    publisher = {USENIX Association},
+    address = {USA},
+    url = {https://www.usenix.org/conference/osdi26/presentation/huang-yuchen},
+}
+```
+
