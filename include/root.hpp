@@ -1,0 +1,62 @@
+#pragma once
+// #ifndef CUDA_ON
+// #define CUDA_ON
+// #endif
+
+#include <fcntl.h>
+#include <immintrin.h>
+#include <math.h>
+#include <pthread.h>
+#include <sched.h>
+#include <spdk/env.h>
+#include <spdk/log.h>
+#include <spdk/nvme.h>
+#include <spdk/nvme_zns.h>
+#include <spdk/stdinc.h>
+#include <spdk/string.h>
+#include <spdk/vmd.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <tbb/tbb.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <bitset>
+#include <cerrno>
+#include <cmath>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <future>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <numeric>
+#include <queue>
+#include <random>
+#include <set>
+#include <shared_mutex>
+#include <span>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include "util/hnswlib/hnswlib.hpp"
+#include "util/jsonlib/json.hpp"
