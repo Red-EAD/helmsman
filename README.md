@@ -130,6 +130,110 @@ Notes:
 
 ---
 
+## Index Builder
+
+### Step 1: Build SPANN Index
+
+MiniHyperVec uses SPANN-format indexes as input. You need to first build a SPANN index using the [SPTAG](https://github.com/microsoft/SPTAG) library.
+
+Please refer to the [SPTAG documentation](https://github.com/microsoft/SPTAG/blob/main/docs/GettingStart.md) for detailed build and usage instructions. After building SPTAG, use its SPANN indexing pipeline to generate the following files:
+
+* `SPTAGHeadVectors.bin` — centroid (head) vectors
+* `SPTAGHeadVectorIDs.bin` — centroid vector IDs
+* `SPTAGFullList.bin` — posting lists for all clusters
+
+
+### Step 2: Convert to MiniHyperVec Format
+
+`spann_build_index` is a standalone tool that converts the SPTAG-generated SPANN index into the HV_CONST format required by MiniHyperVec. It performs the following steps:
+
+1. Load the SPANN head vectors, head IDs, and posting lists produced by SPTAG.
+2. Build an HNSW index over the head (centroid) vectors.
+3. Run the **Filling** algorithm to pad each cluster to a fixed size by borrowing vectors from neighboring clusters.
+4. Compute per-vector norms and serialize the final index artifacts.
+
+### Build
+
+`spann_build_index` is enabled by default. To toggle it:
+
+```bash
+# Enabled (default)
+cmake .. -DSPANN_AUG_BUILD=ON
+
+# Disabled
+cmake .. -DSPANN_AUG_BUILD=OFF
+```
+
+Build only `spann_build_index`:
+
+```bash
+make spann_build_index
+```
+
+The binary is output to `build/app/spann_build_index`.
+
+### Usage
+
+```bash
+./build/app/spann_build_index [options]
+```
+
+### Parameters
+
+| Parameter | Required | Default | Description |
+|---|---|---|---|
+| `--spann-dir` | Yes | — | SPANN index directory (must contain the input files listed below) |
+| `--output-dir` | Yes | — | Output directory for the generated index |
+| `--prefix` | No | `spann` | Filename prefix for all output files |
+| `--fill-target-size` | No | `64` | Target cluster size after filling |
+| `--fill-neighbor-topk` | No | `16` | Number of neighbor clusters to search during filling |
+| `--fill-count-head` | No | `true` | Whether to count the head vector in the cluster size |
+| `--fill-num-threads` | No | `32` | Number of threads for the filling stage |
+| `--hnsw-M` | No | `16` | HNSW M parameter (max edges per node) |
+| `--hnsw-ef-construction` | No | `200` | HNSW ef\_construction parameter |
+| `--hnsw-ef-search` | No | `128` | HNSW ef\_search parameter |
+| `--show-summary` | No | `true` | Print index summary before processing |
+
+### Input Files
+
+The `--spann-dir` directory must contain the following SPTAG-format files:
+
+| File | Description |
+|---|---|
+| `SPTAGHeadVectors.bin` | Centroid (head) vectors, int8, shape = (num\_heads, dim) |
+| `SPTAGHeadVectorIDs.bin` | Centroid vector IDs, int64, shape = (num\_heads,) |
+| `SPTAGFullList.bin` | Posting lists for all clusters (disk layout) |
+
+### Output Files
+
+The tool generates the following files in `--output-dir`:
+
+| File | Description |
+|---|---|
+| `{prefix}_centroids_index.bin` | HNSW index over centroid vectors |
+| `{prefix}_cluster_ids.bin` | Cluster posting-list IDs (fixed-size, uint64) |
+| `{prefix}_cluster_norms.bin` | Per-vector L2 norms within each cluster |
+| `{prefix}_index_meta.json` | Index metadata (dim, centroid count, build params, etc.) |
+
+### Copy Raw Data
+
+After `spann_build_index` completes, copy the original raw dataset into the output index directory and rename it to match the prefix:
+
+```bash
+cp <raw_dataset_path> <output-dir>/{prefix}_rawdata.bin
+```
+This file is required by MiniHyperVec at deployment time for serving raw vectors.
+
+
+
+After this, you can deploy the collection using `minihypervec_deploy`:
+
+```bash
+./build/test/minihypervec_deploy <collection_name>
+```
+
+---
+
 ## NVMe Initialization
 
 Before using SPDK-managed NVMe devices, bind the target NVMe SSD to the proper userspace driver.

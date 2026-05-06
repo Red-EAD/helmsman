@@ -4,6 +4,7 @@ option(PRUNE_ON "Enable PRUNE support" ON)
 option(UNIT_TEST_BUILD "Enable unit_tests build" ON)
 option(TEST_BUILD "Enable tests build" ON)
 option(APP_BUILD "Enable app build" ON)
+option(SPANN_AUG_BUILD "Enable SpannAugmentor (index builder) build" ON)
 
 project(MiniHyperVec VERSION 1.0 LANGUAGES CXX)
 
@@ -104,7 +105,7 @@ set(TBB_ROOT_DIR /mnt/service/3rd_party/TBB_Path) #change as install path
 list(APPEND TBB_INCLUDE_DIR 
 ${TBB_ROOT_DIR}/include/tbb/
 ${TBB_ROOT_DIR}/include/)
-list(APPEND TBB_LIB_DIR ${TBB_ROOT_DIR}/lib)
+list(APPEND TBB_LIB_DIR ${TBB_ROOT_DIR}/lib64)
 list(APPEND TBB_LIB libtbb.so)
 
 # Prune module: LightGBM and ONNX Runtime dependencies
@@ -164,6 +165,11 @@ if (CUDA_ON)
 #TODO: add CUDA lib dirs if needed
 endif()
 link_directories(${LIB_DIR})
+
+# ================= SpannAugmentor =================
+if (SPANN_AUG_BUILD)
+  add_subdirectory(third_party/spann_aug)
+endif()
 
 # ================= Source Files =================
 file(GLOB_RECURSE sources_cpp ${PROJECT_SOURCE_DIR}/source/*.cpp)
@@ -250,12 +256,23 @@ endif()
 
 # app Executables
 if (APP_BUILD)
+  # spann_build_index 需要单独处理：链接 spann_core 而非 MiniHyperVec
+  set(SPANN_AUG_APP_SOURCES
+    ${PROJECT_SOURCE_DIR}/app/spann_build_index.cpp
+  )
+
   set(APP_EXES)
   foreach(app_exe IN LISTS sources_app_cpp)
       get_filename_component(app_exe_name ${app_exe} NAME_WE)
+
+      # 跳过 spann_aug 相关的 app（如果 SPANN_AUG_BUILD 开启，后面单独处理）
+      if (SPANN_AUG_BUILD AND app_exe IN_LIST SPANN_AUG_APP_SOURCES)
+          continue()
+      endif()
+
       add_executable(${app_exe_name} ${app_exe})
-      list(APPEND APP_EXES ${app_exe_name}) 
-      target_link_libraries(${app_exe_name} 
+      list(APPEND APP_EXES ${app_exe_name})
+      target_link_libraries(${app_exe_name}
         PRIVATE MiniHyperVec
       )
   endforeach()
@@ -263,8 +280,8 @@ if (APP_BUILD)
     foreach(app_exe IN LISTS sources_app_cuda)
         get_filename_component(app_exe_name ${app_exe} NAME_WE)
         add_executable(${app_exe_name} ${app_exe})
-        list(APPEND APP_EXES ${app_exe_name}) 
-        target_link_libraries(${app_exe_name} 
+        list(APPEND APP_EXES ${app_exe_name})
+        target_link_libraries(${app_exe_name}
           PRIVATE MiniHyperVec
         )
     endforeach()
@@ -274,6 +291,18 @@ if (APP_BUILD)
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app
   )
+
+  # SpannAugmentor app: spann_build_index 链接 spann_core（不依赖 MiniHyperVec）
+  if (SPANN_AUG_BUILD)
+    foreach(spann_app IN LISTS SPANN_AUG_APP_SOURCES)
+        get_filename_component(spann_app_name ${spann_app} NAME_WE)
+        add_executable(${spann_app_name} ${spann_app})
+        target_link_libraries(${spann_app_name} PRIVATE spann_core)
+        set_target_properties(${spann_app_name}
+          PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app
+        )
+    endforeach()
+  endif()
 endif()
 
 # ================= Install =================
