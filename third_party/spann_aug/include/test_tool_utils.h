@@ -213,7 +213,6 @@ namespace spann
         index.saveClusterIds(artifacts.cluster_ids_path);
     }
 
-    /// 生成 index_meta.json，记录索引构建的元信息
     inline void SaveIndexMeta(const BuildIndexConfig &config,
                               const SpannIndex &index,
                               const std::string &output_path)

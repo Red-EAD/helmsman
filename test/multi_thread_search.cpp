@@ -20,7 +20,7 @@ namespace
         float threshold_topk = gt_dis[topk - 1] + 1e-5f;
         for (size_t i = 0; i < res.size() && i < topk; ++i)
         {
-            const float rdist = static_cast<float>(res[i].second); // 注意量纲一致性
+            const float rdist = static_cast<float>(res[i].second);
             if (rdist <= threshold_topk)
                 ++max_hits;
         }
@@ -129,8 +129,6 @@ namespace
 
 int main(int argc, char **argv)
 {
-
-    // 命令行参数解析
     util::benchmark::benchmark_param param;
     std::string index_type_str;
     std::string vec_type_str;
@@ -141,9 +139,8 @@ int main(int argc, char **argv)
     uint32_t memory_search_max_visits = 0;
     RecallMode recall_mode = RecallMode::kId;
     float dist_eps = 1e-5f;
-    int32_t thread_num = 1; // 默认线程数
+    int32_t thread_num = 1;
 
-    // 解析参数
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
@@ -204,7 +201,6 @@ int main(int argc, char **argv)
         }
     }
 
-    // 类型转换
     if (index_type_str == "HV_CONST")
     {
         param.index_type = minihypervec::collection::IndexType::HV_CONST;
@@ -229,7 +225,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // 参数有效性检查
     if (param.test_collection_name.empty() || param.test_query_path.empty() || param.test_groundtruth_path.empty() || topk == 0)
     {
         std::cerr << "Error: missing required arguments.\n";
@@ -242,7 +237,6 @@ int main(int argc, char **argv)
 
     for (auto topk_run : topk_list)
     {
-        // 动态创建 search_param
         if (param.index_type == minihypervec::collection::IndexType::HV_CONST)
         {
             auto sp = std::make_unique<minihypervec::index::MiniHyperVecConstSearchParam>();
@@ -253,7 +247,7 @@ int main(int argc, char **argv)
                 auto hnsw_sp = std::make_unique<minihypervec::index::HnswSearchParam>();
                 if (memory_search_max_visits > 0)
                     hnsw_sp->max_visits = memory_search_max_visits;
-                hnsw_sp->topk_value = cluster_nprobe; // use cluster_nprobe as the topk for centroid search in memory
+                hnsw_sp->topk_value = cluster_nprobe;
                 sp->centroid_search_param = std::move(hnsw_sp);
             }
             param.search_param = std::move(sp);
@@ -290,7 +284,6 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        // read query
         const std::string QueryPath = param.test_query_path;
         util::Dataset<int8_t> query_dataset(QueryPath);
         uint32_t dim = query_dataset.dim;
@@ -324,8 +317,7 @@ int main(int argc, char **argv)
         using clock = std::chrono::steady_clock;
         using usec = std::chrono::microseconds;
 
-        // ===== 统计方式对齐 multiThreads_search.cpp =====
-        const uint32_t repeats = 3; // 可根据需要调整
+        const uint32_t repeats = 3;
         const uint64_t total_ops = nq * repeats;
         std::vector<double> latencies_ms(total_ops, 0.0);
 
@@ -379,7 +371,6 @@ int main(int argc, char **argv)
 
         std::cout << "nq=" << nq << " dim=" << dim << ", threads=" << active_threads << "\n";
 
-        // ===== 统计输出 =====
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
         std::cout << "Elapsed (search-only, " << repeats << "x): " << ms << " ms\n";
         std::cout << "Avg per pass: " << (ms / static_cast<double>(repeats)) << " ms\n";

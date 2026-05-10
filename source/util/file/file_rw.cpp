@@ -48,7 +48,6 @@ namespace minihypervec
                                         const std::string &data)
     {
       std::string tmp = path + ".tmp";
-      // 0644 可按需要调整权限
       int fd = ::open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
       if (fd < 0)
         return -errno;

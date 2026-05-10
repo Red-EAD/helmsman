@@ -1,4 +1,4 @@
 {
-    "nvme_meta_path": "/mnt/service/AE/hyper-vec/tmp_file/nvme_meta/",
-    "release_index_path": "/mnt/service/AE/hyper-vec/tmp_file/release_index/"
+    "nvme_meta_path": "/mnt/service/minihyper-vec/tmp_file/nvme_meta/",
+    "release_index_path": "/mnt/service/minihyper-vec/tmp_file/release_index/"
 }

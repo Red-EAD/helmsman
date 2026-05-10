@@ -8,11 +8,8 @@ option(SPANN_AUG_BUILD "Enable SpannAugmentor (index builder) build" ON)
 
 project(MiniHyperVec VERSION 1.0 LANGUAGES CXX)
 
-# --- Build type configuration ---
-# -O3 -g by default
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
-  # set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
 endif()
 
@@ -29,20 +26,17 @@ else()
     message(STATUS "CUDA disabled")
 endif()
 
-# global compile flags
 add_compile_options(
   -fpermissive
   -pthread
   -march=native
 )
-# global link flags
 add_link_options(
   -static-libstdc++ 
   -static-libgcc
   -pthread
   -Wl,--warn-unresolved-symbols
 )
-# config-specific compile flags
 add_compile_options(
   $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Release>>:-O3>
   $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RelWithDebInfo>>:-O3>
@@ -58,19 +52,12 @@ if (CUDA_ON)
     $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:Debug>>:-g>
   )
 endif()
-# global definitions
 if(CUDA_ON)
   add_compile_definitions(CUDA_ON) 
 endif()
-# #ifdef CUDA_ON
-#   // ...
-# #else
-#   // ...
-# #endif
 
-# ================= Dependencies =================
+
 find_package(PkgConfig REQUIRED)
-# SPDK dependency # version 22.09
 set(SPDK_INCLUDE_DIR)
 set(SPDK_LIB)
 pkg_check_modules(SPDK_NVME REQUIRED spdk_nvme)
@@ -97,18 +84,16 @@ ${SPDK_VMD_CFLAGS_OTHER}
 ${SPDK_SYSLIBS_CFLAGS_OTHER}
 )
 
-# TBB dependency # version 2021.12.0
 set(TBB_INCLUDE_DIR)
 set(TBB_LIB)
 set(TBB_LIB_DIR)
-set(TBB_ROOT_DIR /mnt/service/3rd_party/TBB_Path) #change as install path
+set(TBB_ROOT_DIR /mnt/service/3rd_party/TBB_Path)
 list(APPEND TBB_INCLUDE_DIR 
 ${TBB_ROOT_DIR}/include/tbb/
 ${TBB_ROOT_DIR}/include/)
 list(APPEND TBB_LIB_DIR ${TBB_ROOT_DIR}/lib64)
 list(APPEND TBB_LIB libtbb.so)
 
-# Prune module: LightGBM and ONNX Runtime dependencies
 set(LIGHTGBM_INCLUDE_DIR)
 set(LIGHTGBM_LIB_DIR)
 set(LIGHTGBM_LIB)
@@ -116,13 +101,11 @@ set(ONNXRT_INCLUDE_DIR)
 set(ONNXRT_LIB_DIR)      
 set(ONNXRT_LIB)     
 if(PRUNE_ON)
-  # LightGBM # version 4.3.0
-  set(LIGHTGBM_ROOT_DIR /mnt/service/3rd_party/LightGBM_Path) #change as install path
+  set(LIGHTGBM_ROOT_DIR /mnt/service/3rd_party/LightGBM_Path) 
   list(APPEND LIGHTGBM_INCLUDE_DIR ${LIGHTGBM_ROOT_DIR}/include)
   list(APPEND LIGHTGBM_LIB_DIR ${LIGHTGBM_ROOT_DIR}/lib)
   list(APPEND LIGHTGBM_LIB lib_lightgbm.so)
-  # ONNX Runtime # version 1.23.2
-  set(ONNXRT_ROOT_DIR /mnt/service/3rd_party/ONNXRT_Path) #change as install path
+  set(ONNXRT_ROOT_DIR /mnt/service/3rd_party/ONNXRT_Path) 
   list(APPEND ONNXRT_INCLUDE_DIR ${ONNXRT_ROOT_DIR}/include)
   list(APPEND ONNXRT_LIB_DIR ${ONNXRT_ROOT_DIR}/lib)
   list(APPEND ONNXRT_LIB onnxruntime)
@@ -137,10 +120,8 @@ list(APPEND LIB_ALL
  $<IF:$<BOOL:${PRUNE_ON}>,${ONNXRT_LIB},>
 )
 if (CUDA_ON)
-# TODO: add CUDA libs if needed
 endif()
 
-# ================ Include Directories =================
 set(INCLUDE_DIR)
 list(APPEND INCLUDE_DIR
  ${PROJECT_SOURCE_DIR}/include
@@ -150,11 +131,9 @@ list(APPEND INCLUDE_DIR
  $<IF:$<BOOL:${PRUNE_ON}>,${ONNXRT_INCLUDE_DIR},>
 )
 if  (CUDA_ON)
-# TODO: add CUDA include dirs if needed
 endif()
 include_directories(${INCLUDE_DIR})
 
-# ================ Library Directories =================
 set(LIB_DIR)
 list(APPEND LIB_DIR
  ${TBB_LIB_DIR}
@@ -162,16 +141,13 @@ list(APPEND LIB_DIR
  $<IF:$<BOOL:${PRUNE_ON}>,${ONNXRT_LIB_DIR},>
 )
 if (CUDA_ON)
-#TODO: add CUDA lib dirs if needed
 endif()
 link_directories(${LIB_DIR})
 
-# ================= SpannAugmentor =================
 if (SPANN_AUG_BUILD)
   add_subdirectory(third_party/spann_aug)
 endif()
 
-# ================= Source Files =================
 file(GLOB_RECURSE sources_cpp ${PROJECT_SOURCE_DIR}/source/*.cpp)
 file(GLOB_RECURSE sources_app_cpp ${PROJECT_SOURCE_DIR}/app/*.cpp)
 file(GLOB_RECURSE sources_test_cpp ${PROJECT_SOURCE_DIR}/test/*.cpp)
@@ -183,8 +159,6 @@ if (CUDA_ON)
   file(GLOB_RECURSE sources_unit_test_cuda ${PROJECT_SOURCE_DIR}/unit_test/*.cu)
 endif()
 
-# ================= Build Targets =================
-# MiniHyperVec Library
 add_library(MiniHyperVec SHARED ${sources_cpp} ${sources_cuda})
 target_link_libraries(MiniHyperVec 
   PUBLIC ${LIB_ALL} 
@@ -197,7 +171,6 @@ if (CUDA_ON)
       $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 endif()
 
-# Unit Tests
 if (UNIT_TEST_BUILD)
   set(UNIT_TEST_EXES)
   foreach(unit_test_exe IN LISTS sources_unit_test_cpp)
@@ -225,7 +198,6 @@ if (UNIT_TEST_BUILD)
   )
 endif()
 
-# test Executables
 if (TEST_BUILD)
   set(TEST_EXES)
   foreach(test_exe IN LISTS sources_test_cpp)
@@ -254,9 +226,7 @@ if (TEST_BUILD)
 endif()
 
 
-# app Executables
 if (APP_BUILD)
-  # spann_build_index 需要单独处理：链接 spann_core 而非 MiniHyperVec
   set(SPANN_AUG_APP_SOURCES
     ${PROJECT_SOURCE_DIR}/app/spann_build_index.cpp
   )
@@ -264,8 +234,6 @@ if (APP_BUILD)
   set(APP_EXES)
   foreach(app_exe IN LISTS sources_app_cpp)
       get_filename_component(app_exe_name ${app_exe} NAME_WE)
-
-      # 跳过 spann_aug 相关的 app（如果 SPANN_AUG_BUILD 开启，后面单独处理）
       if (SPANN_AUG_BUILD AND app_exe IN_LIST SPANN_AUG_APP_SOURCES)
           continue()
       endif()
@@ -292,7 +260,6 @@ if (APP_BUILD)
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app
   )
 
-  # SpannAugmentor app: spann_build_index 链接 spann_core（不依赖 MiniHyperVec）
   if (SPANN_AUG_BUILD)
     foreach(spann_app IN LISTS SPANN_AUG_APP_SOURCES)
         get_filename_component(spann_app_name ${spann_app} NAME_WE)
@@ -305,29 +272,24 @@ if (APP_BUILD)
   endif()
 endif()
 
-# ================= Install =================
 include(GNUInstallDirs)
-# 安装共享库/静态库（如果你以后也可能编静态库）
 install(TARGETS MiniHyperVec
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   # .so
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}   # .a
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}  
 )
 
-# 安装头文件：把项目的 include/ 整个拷到 prefix/include/
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
     PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.hh" PATTERN "*.hxx"  PATTERN "*.cuh"
 )
 
-# 安装 app 下的可执行文件（你现在是 foreach 生成的 APP_EXES）
 if (APP_BUILD)
   install(TARGETS ${APP_EXES}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/app
   )
 endif()
 
-# 安装 test 下的可执行文件
 if (TEST_BUILD)
   install(TARGETS ${TEST_EXES}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/test

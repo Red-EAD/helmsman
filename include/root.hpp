@@ -1,7 +1,4 @@
 #pragma once
-// #ifndef CUDA_ON
-// #define CUDA_ON
-// #endif
 
 #include <fcntl.h>
 #include <immintrin.h>
