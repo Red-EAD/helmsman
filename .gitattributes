@@ -1,1 +1,2 @@
 datasets/SimRec/vectors.bin/SimRec.part_* filter=lfs diff=lfs merge=lfs -text
+datasets/SimRec/query.i8bin filter=lfs diff=lfs merge=lfs -text
