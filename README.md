@@ -2,7 +2,43 @@
 
 MiniHyperVec is the open-source proof-of-concept version of Helmsman (The Clustering Strikes Back: Building Cost-Effective and High-Performance ANNS at Scale with Helmsman, OSDI 2026).
 
+## Artifact Scope
+
+This repository contains an open-source proof-of-concept implementation of Helmsman. It includes:
+
+- **Core CPU-side components** for clustered ANNS serving
+- **Index conversion tool** (`spann_build_index`) to transform SPTAG-generated SPANN indexes into the HV_CONST format required by MiniHyperVec
+- **Deployment and search utilities** (`minihypervec_deploy`, `multi_thread_search`)
+- **SPDK/NVMe user-space I/O support** for batch cluster loading and raw vector serving
+
+### Not Included
+
+This proof-of-concept artifact does not include all components of the full Helmsman system as described in the paper. Notably absent are:
+
+- **GPU-accelerated build pipeline** — The paper's Section 5.3 describes GPU optimizations for index construction; these are not included in this PoC.
+- **LLSP module** — The paper's Section 5.5 discusses LLSP (Latency-aware Load Scheduling); this component is omitted from the public PoC.
+
+As a result, this repository demonstrates the main architecture and serving path rather than reproducing all optimizations presented in the full system. Pruning-related components (Section 5.4) are present but optional (see **Build Options** below).
+
+---
+
 ## Prerequisites
+
+### Required Host Tools
+
+- `cmake` (version 3.20 or higher)
+- A C++ compiler with C++20 support (e.g., `g++` 11+, `clang++` 14+)
+- `make`
+- `git`
+- **`pkg-config`** (essential for SPDK discovery)
+
+**Important:** The top-level CMake configuration uses `find_package(PkgConfig REQUIRED)` and discovers SPDK libraries via pkg-config metadata (see `CMakeLists.txt` line 47). **Even if you only intend to build components without NVMe dependencies (e.g., `spann_build_index`), `pkg-config` must be installed during the configuration phase.** If configuration fails with "missing PKG_CONFIG_EXECUTABLE", install pkg-config:
+
+- **Ubuntu/Debian:** `sudo apt install pkg-config`
+- **macOS:** `brew install pkg-config`
+- **RHEL/CentOS:** `sudo yum install pkgconfig`
+
+### Workspace Setup
 
 Prepare a dedicated workspace under `/mnt/service` for project data, indexes, and third-party dependencies.
 
@@ -60,6 +96,23 @@ This installs oneTBB to:
 /mnt/service/3rd_party/TBB_Path
 ```
 
+### Optional Dependencies (Pruning)
+
+When `PRUNE_ON=ON`, the CMake build expects the following libraries at these locations (adjust paths in `CMakeLists.txt` or environment if your installation differs):
+
+- **LightGBM:** `/mnt/service/3rd_party/LightGBM_Path`  
+  Must contain `include/` (headers) and `lib/` (liblib_lightgbm.so)
+  
+- **ONNX Runtime:** `/mnt/service/3rd_party/ONNXRT_Path`  
+  Must contain `include/` (headers) and `lib/` (libonnxruntime.so)
+
+Build and install instructions for these dependencies are not provided in this README; please refer to the official repositories:
+
+- [LightGBM Installation Guide](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
+- [ONNX Runtime Build Guide](https://onnxruntime.ai/docs/build/)
+
+**If you do not have these libraries installed and do not need pruning, simply use `PRUNE_ON=OFF` during configuration (no additional dependencies required).**
+
 ---
 
 ## Project Setup
@@ -109,24 +162,37 @@ Field description:
 
 ## Build MiniHyperVec
 
-Configure the project:
+### Build Options
+
+The default CMake configuration has `PRUNE_ON=ON` (see `CMakeLists.txt` line 3). When pruning is enabled, the build requires additional third-party dependencies for LightGBM and ONNX Runtime, which implement the pruning functionality described in Section 5.4 of the paper.
+
+If you do not require pruning features (and the corresponding pruning results in the paper), build with `PRUNE_ON=OFF`:
 
 ```bash
+mkdir build && cd build
 cmake .. \
   -DCMAKE_CXX_STANDARD=20 \
   -DPRUNE_ON=OFF
-```
-
-Build:
-
-```bash
 make -j
 ```
 
-Notes:
+**If pruning is disabled**, the pruning-related components and experimental results from Section 5.4 will not be available in this build. The core ANNS serving pipeline, index conversion, and NVMe-based deployment will still function normally.
 
-* `CMAKE_CXX_STANDARD=20` is required.
-* `PRUNE_ON=OFF` disables optional pruning-related dependencies such as LightGBM and ONNX Runtime.
+### Full Build with Pruning (Optional)
+
+If you have LightGBM and ONNX Runtime installed at the paths specified in the "Optional Dependencies" section below, you can enable pruning:
+
+```bash
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DPRUNE_ON=ON
+make -j
+```
+
+### Build Notes
+
+* **`CMAKE_CXX_STANDARD=20`:** Although `CMakeLists.txt` defaults to C++17, please explicitly set C++20 as shown above to ensure compatibility with all project features.
 
 ---
 
