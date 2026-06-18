@@ -20,6 +20,8 @@ This proof-of-concept artifact does not include all components of the full Helms
 
 As a result, this repository demonstrates the main architecture and serving path rather than reproducing all optimizations presented in the full system. Pruning-related components (Section 5.4) are present but optional (see **Build Options** below).
 
+Both the GPU-accelerated build pipeline and the LLSP module are key items on our roadmap and are planned for inclusion in a future release.
+
 ---
 
 ## Prerequisites
