@@ -24,6 +24,16 @@ Both the GPU-accelerated build pipeline and the LLSP module are key items on our
 
 ---
 
+## Datasets
+
+The benchmark datasets used by this project can be downloaded from the following Hugging Face repository:
+
+- [Red-EAD/helmsman](https://huggingface.co/datasets/Red-EAD/helmsman)
+
+The repository contains the `SimRec` and `SimSrch` datasets, including binary vector files (`vectors.bin`) and query files (`query.i8bin`). 
+
+---
+
 ## Prerequisites
 
 ### Required Host Tools
